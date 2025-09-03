@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: spb3-kafka-service
+
+
+# Kafka configuration
+kafka:
+  bootstrap-servers: localhost:9092
