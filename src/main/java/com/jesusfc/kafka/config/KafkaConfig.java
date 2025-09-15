@@ -1,7 +1,7 @@
 package com.jesusfc.kafka.config;
 
 
-import com.jesusfc.demo.kafka.message.OrderCreated;
+import com.jesusfc.kafka.message.OrderCreated;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
