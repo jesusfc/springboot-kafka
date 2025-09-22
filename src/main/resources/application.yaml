@@ -1,8 +1,9 @@
 spring:
   application:
     name: spb3-kafka-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: my-group-${random.uuid}
+      auto-offset-reset: earliest
 
-
-# Kafka configuration
-kafka:
-  bootstrap-servers: localhost:9092
