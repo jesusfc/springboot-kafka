@@ -45,11 +45,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ActiveProfiles("test")
 // the partitions should match the number of partitions defined in the topics used in the test
-@EmbeddedKafka(partitions = 12, controlledShutdown = true)
+@EmbeddedKafka(partitions = 12, controlledShutdown = true,
+        topics = {
+            OrderDispatchIntegrationTest.ORDER_CREATED_TOPIC,
+            OrderDispatchIntegrationTest.ORDER_DISPATCHED_TOPIC
+        })
 class OrderDispatchIntegrationTest {
 
-    private static final String ORDER_CREATED_TOPIC = "order.created";
-    private static final String ORDER_DISPATCHED_TOPIC = "order.dispatched";
+    public static final String ORDER_CREATED_TOPIC = "order.created";
+    public static final String ORDER_DISPATCHED_TOPIC = "order.dispatched";
 
     @Autowired
     private EmbeddedKafkaBroker embeddedKafkaBroker;
