@@ -22,7 +22,6 @@ import static java.util.UUID.randomUUID;
 @Service
 public class DispatchService {
 
-
     private static final String ORDER_DISPATCHED_TOPIC = "my.order.dispatched.topic";
     private final KafkaTemplate<String, Object> kafkaProducer;
 

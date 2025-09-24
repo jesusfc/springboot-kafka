@@ -30,12 +30,17 @@ public class OrderCreatedHandler {
      * La anotación @KafkaListener indica que este método es un consumidor de Kafka.
      * El parámetro "id" es un identificador único para este consumidor.
      * El parámetro "topics" especifica el tema de Kafka al que se suscribe.
-     * El parámetro "groupId" define el grupo de consumidores al que pertenece este consumidor
+     * El parámetro "groupId" define el grupo de consumidores al que pertenece este consumidor. Si
+     * varios consumidores tienen el mismo groupId, se distribuirán los mensajes entre ellos. Se distribuye la
+     * carga de procesamiento entre las diferentes instancias. Pero si tienen diferentes groupId,
+     * cada consumidor recibirá una copia de cada mensaje. Esto permite escalar el procesamiento de mensajes
+     * y asegurar que cada mensaje sea procesado al menos una vez.
+     * El parámetro "containerFactory" especifica la fábrica de contenedores que se utilizará para crear el contenedor del consumidor.
      */
     @KafkaListener(
             id = "orderConsumerClient",
-            topics = "my.order.created.topic",
-            groupId = "my.super.group",
+            topics = "${spring.kafka.topics.consumer}",
+            groupId = "${spring.kafka.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void listen(@Header(KafkaHeaders.RECEIVED_PARTITION) Integer partition,

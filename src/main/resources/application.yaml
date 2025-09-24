@@ -3,7 +3,12 @@ spring:
     name: spb3-kafka-service
   kafka:
     bootstrap-servers: localhost:9092
+    topics:
+      consumer: my.order.created.topic
     consumer:
+      # Si tenemos varios consumidores de un mismo topic y cada uno tiene un group-id diferente,
+      # cada consumidor recibirá todos los mensajes del topic. Si varios consumidores comparten el mismo group-id
+      # entonces los mensajes se reparten entre ellos.
       group-id: my-group-${random.uuid}
       auto-offset-reset: earliest
 
