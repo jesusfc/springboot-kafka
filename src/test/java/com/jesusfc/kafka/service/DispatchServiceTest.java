@@ -1,6 +1,7 @@
 package com.jesusfc.kafka.service;
 
 
+import com.jesusfc.kafka.client.StockServiceClient;
 import com.jesusfc.kafka.message.OrderCreated;
 import com.jesusfc.kafka.message.OrderDispatched;
 import com.jesusfc.kafka.util.TestEventData;
@@ -26,6 +27,7 @@ class DispatchServiceTest {
 
     private DispatchService dispatchService;
     private KafkaTemplate kafkaTemplateMock;
+    private StockServiceClient stockServiceClientMock;
 
     private final static String TOPIC = "my.order.dispatched.topic";
     private final static String TEST_KEY = "test-key";
@@ -33,10 +35,9 @@ class DispatchServiceTest {
 
     @BeforeEach
     void setUp() {
-
-
         kafkaTemplateMock = mock(KafkaTemplate.class);
-        dispatchService = new DispatchService(kafkaTemplateMock);
+        stockServiceClientMock = mock(StockServiceClient.class);
+        dispatchService = new DispatchService(kafkaTemplateMock, stockServiceClientMock);
     }
 
     @Test
