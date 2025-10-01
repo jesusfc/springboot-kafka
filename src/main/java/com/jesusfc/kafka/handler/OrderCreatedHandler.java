@@ -26,7 +26,7 @@ public class OrderCreatedHandler {
      * This method listens to the "my.order.created.topic" Kafka topic for messages of type OrderCreated.
      * It processes the incoming OrderCreated message by calling the DispatchService.
      *
-     * CREAMOS UN CONSUMIDOR DE KAFKA QUE ESCUCHA EL TEMA "my.order.created.topic"
+     * CREAMOS UN CONSUMIDOR DE KAFKA QUE ESCUCHA EL TOPIC "my.order.created.topic"
      * La anotación @KafkaListener indica que este método es un consumidor de Kafka.
      * El parámetro "id" es un identificador único para este consumidor.
      * El parámetro "topics" especifica el tema de Kafka al que se suscribe.
