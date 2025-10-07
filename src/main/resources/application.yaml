@@ -12,3 +12,5 @@ spring:
       group-id: my-group-${random.uuid}
       auto-offset-reset: earliest
 
+dispatch:
+  stockServiceEndpoint: http://localhost:9001/api/v1/stock

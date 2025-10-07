@@ -4,7 +4,8 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:${CONFLUENT_VERSION:-latest}
-    restart: no
+    restart: always
+    container_name: kafka
     volumes:
       - kafka-data:/var/lib/kafka/data:Z
     ports:

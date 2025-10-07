@@ -1,6 +1,8 @@
 package com.jesusfc.kafka.config;
 
 
+import com.jesusfc.kafka.exception.NotRetryableException;
+import com.jesusfc.kafka.exception.RetryableException;
 import com.jesusfc.kafka.message.OrderCreated;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -11,9 +13,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.util.backoff.FixedBackOff;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -31,6 +35,13 @@ public class KafkaConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
+
+        // Configuración del manejador de errores con políticas de reintento y excepciones específicas
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(new FixedBackOff(100L, 3L));
+        errorHandler.addNotRetryableExceptions(NotRetryableException.class);
+        errorHandler.addRetryableExceptions(RetryableException.class);
+        factory.setCommonErrorHandler(errorHandler);
+
         return factory;
     }
 

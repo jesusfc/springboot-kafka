@@ -1,5 +1,7 @@
 package com.jesusfc.kafka.handler;
 
+import com.jesusfc.kafka.exception.NotRetryableException;
+import com.jesusfc.kafka.exception.RetryableException;
 import com.jesusfc.kafka.message.OrderCreated;
 import com.jesusfc.kafka.service.DispatchService;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +54,15 @@ public class OrderCreatedHandler {
             log.info("Processing order created event, partition: {}, key: {}, payload: {}", partition, key, payload);
             dispatchService.process(partition, key, payload);
 
+        } catch (RetryableException re) {
+            // Si es un error recuperable, lanzamos la excepción para que Kafka reintente el procesamiento.
+            log.warn("Retryable error processing order created event, will retry: {}, payload: {}", re.getMessage(), payload);
+            throw re;
+
         } catch (Exception e) {
             log.error("Error processing order created event: {}", payload, e);
+            // Si es un error no recuperable, lo registramos y descartamos el mensaje.
+            throw new NotRetryableException(e);
         }
     }
 }
