@@ -109,7 +109,10 @@ class DispatchServiceTest {
         verify(kafkaTemplateMock, times(1)).send(eq("dispatch.tracking"), eq(key), any(DispatchPreparing.class));
         verifyNoMoreInteractions(kafkaTemplateMock);
         verify(stockServiceClientMock, times(1)).checkAvailability(testEvent.getItem());
-        assertThat(exception.getMessage(), equalTo("dispatch tracking producer failure"));
+        assertThat(exception.getMessage()).isEqualTo("dispatch tracking producer failure");
+        assertThat(exception.getMessage()).isEqualTo("order dispatched producer failure");
+        assertThat(exception.getMessage()).isEqualTo("dispatch tracking producer failure");
+        assertThat(exception.getMessage()).isEqualTo("stock service client failure");
     }
 
     @Test
@@ -126,7 +129,7 @@ class DispatchServiceTest {
         verify(kafkaTemplateMock, times(1)).send(eq("order.dispatched"), eq(key), any(OrderDispatched.class));
         verifyNoMoreInteractions(kafkaTemplateMock);
         verify(stockServiceClientMock, times(1)).checkAvailability(testEvent.getItem());
-        assertThat(exception.getMessage(), "order dispatched producer failure");
+        assertThat(exception.getMessage()).isEqualTo("order dispatched producer failure");
     }
 
     @Test
@@ -145,7 +148,7 @@ class DispatchServiceTest {
         verify(kafkaTemplateMock, times(1)).send(eq("order.dispatched"), eq(key), any(OrderDispatched.class));
         verify(kafkaTemplateMock, times(1)).send(eq("dispatch.tracking"), eq(key), any(DispatchCompleted.class));
         verify(stockServiceClientMock, times(1)).checkAvailability(testEvent.getItem());
-        assertThat(exception.getMessage(), equalTo("dispatch tracking producer failure"));
+        assertThat(exception.getMessage()).isEqualTo("dispatch tracking producer failure");
     }
 
     @Test
@@ -156,7 +159,7 @@ class DispatchServiceTest {
         doThrow(new RuntimeException("stock service client failure")).when(stockServiceClientMock).checkAvailability(testEvent.getItem());
 
         Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(TEST_PARTITION, key, testEvent));
-        assertThat(exception.getMessage(), equalTo("stock service client failure"));
+        assertThat(exception.getMessage()).isEqualTo("stock service client failure");
 
         verifyNoInteractions(kafkaTemplateMock);
         verify(stockServiceClientMock, times(1)).checkAvailability(testEvent.getItem());
