@@ -44,29 +44,29 @@ class OrderCreatedHandlerTest {
     void listen_Success() throws Exception {
         String key = randomUUID().toString();
         OrderCreated testEvent = TestEventData.buildOrderCreatedEvent(randomUUID(), randomUUID().toString());
-        handler.listen(0, key, testEvent);
-        verify(dispatchServiceMock, times(1)).process(key, testEvent);
+        handler.listen(TEST_PARTITION, key, testEvent);
+        verify(dispatchServiceMock, times(1)).process(TEST_PARTITION, key, testEvent);
     }
 
     @Test
     public void listen_ServiceThrowsException() throws Exception {
         String key = randomUUID().toString();
         OrderCreated testEvent = TestEventData.buildOrderCreatedEvent(randomUUID(), randomUUID().toString());
-        doThrow(new RuntimeException("Service failure")).when(dispatchServiceMock).process(key, testEvent);
+        doThrow(new RuntimeException("Service failure")).when(dispatchServiceMock).process(TEST_PARTITION, key, testEvent);
 
         Exception exception = assertThrows(NotRetryableException.class, () -> handler.listen(0, key, testEvent));
         assertThat(exception.getMessage(), equalTo("java.lang.RuntimeException: Service failure"));
-        verify(dispatchServiceMock, times(1)).process(key, testEvent);
+        verify(dispatchServiceMock, times(1)).process(TEST_PARTITION, key, testEvent);
     }
 
     @Test
     public void testListen_ServiceThrowsRetryableException() throws Exception {
         String key = randomUUID().toString();
         OrderCreated testEvent = TestEventData.buildOrderCreatedEvent(randomUUID(), randomUUID().toString());
-        doThrow(new RetryableException("Service failure")).when(dispatchServiceMock).process(key, testEvent);
+        doThrow(new RetryableException("Service failure")).when(dispatchServiceMock).process(TEST_PARTITION, key, testEvent);
 
-        Exception exception = assertThrows(RuntimeException.class, () -> handler.listen(0, key, testEvent));
+        Exception exception = assertThrows(RuntimeException.class, () -> handler.listen(TEST_PARTITION, key, testEvent));
         assertThat(exception.getMessage(), equalTo("Service failure"));
-        verify(dispatchServiceMock, times(1)).process(key, testEvent);
+        verify(dispatchServiceMock, times(1)).process(TEST_PARTITION, key, testEvent);
     }
 }

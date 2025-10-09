@@ -13,9 +13,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.concurrent.CompletableFuture;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -78,7 +78,7 @@ class DispatchServiceTest {
 
         String key = randomUUID().toString();
         OrderCreated testEvent = TestEventData.buildOrderCreatedEvent(randomUUID(), randomUUID().toString());
-        dispatchService.process(key, testEvent);
+        dispatchService.process(TEST_PARTITION, key, testEvent);
 
         verify(kafkaTemplateMock, times(1)).send(eq("dispatch.tracking"), eq(key), any(DispatchPreparing.class));
         verify(kafkaTemplateMock, times(1)).send(eq("order.dispatched"), eq(key), any(OrderDispatched.class));
@@ -92,7 +92,7 @@ class DispatchServiceTest {
 
         String key = randomUUID().toString();
         OrderCreated testEvent = TestEventData.buildOrderCreatedEvent(randomUUID(), randomUUID().toString());
-        dispatchService.process(key, testEvent);
+        dispatchService.process(TEST_PARTITION, key, testEvent);
         verifyNoInteractions(kafkaTemplateMock);
         verify(stockServiceClientMock, times(1)).checkAvailability(testEvent.getItem());
     }
@@ -104,7 +104,7 @@ class DispatchServiceTest {
         when(stockServiceClientMock.checkAvailability(anyString())).thenReturn("true");
         doThrow(new RuntimeException("dispatch tracking producer failure")).when(kafkaTemplateMock).send(eq("dispatch.tracking"), eq(key), any(DispatchPreparing.class));
 
-        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(key, testEvent));
+        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(TEST_PARTITION, key, testEvent));
 
         verify(kafkaTemplateMock, times(1)).send(eq("dispatch.tracking"), eq(key), any(DispatchPreparing.class));
         verifyNoMoreInteractions(kafkaTemplateMock);
@@ -120,13 +120,13 @@ class DispatchServiceTest {
         when(stockServiceClientMock.checkAvailability(anyString())).thenReturn("true");
         doThrow(new RuntimeException("order dispatched producer failure")).when(kafkaTemplateMock).send(eq("order.dispatched"), eq(key), any(OrderDispatched.class));
 
-        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(key, testEvent));
+        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(TEST_PARTITION, key, testEvent));
 
         verify(kafkaTemplateMock, times(1)).send(eq("dispatch.tracking"), eq(key), any(DispatchPreparing.class));
         verify(kafkaTemplateMock, times(1)).send(eq("order.dispatched"), eq(key), any(OrderDispatched.class));
         verifyNoMoreInteractions(kafkaTemplateMock);
         verify(stockServiceClientMock, times(1)).checkAvailability(testEvent.getItem());
-        assertThat(exception.getMessage(), equalTo("order dispatched producer failure"));
+        assertThat(exception.getMessage(), "order dispatched producer failure");
     }
 
     @Test
@@ -139,7 +139,7 @@ class DispatchServiceTest {
         OrderCreated testEvent = TestEventData.buildOrderCreatedEvent(randomUUID(), randomUUID().toString());
         doThrow(new RuntimeException("dispatch tracking producer failure")).when(kafkaTemplateMock).send(eq("dispatch.tracking"), eq(key), any(DispatchCompleted.class));
 
-        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(key, testEvent));
+        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(TEST_PARTITION, key, testEvent));
 
         verify(kafkaTemplateMock, times(1)).send(eq("dispatch.tracking"), eq(key), any(DispatchPreparing.class));
         verify(kafkaTemplateMock, times(1)).send(eq("order.dispatched"), eq(key), any(OrderDispatched.class));
@@ -155,7 +155,7 @@ class DispatchServiceTest {
 
         doThrow(new RuntimeException("stock service client failure")).when(stockServiceClientMock).checkAvailability(testEvent.getItem());
 
-        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(key, testEvent));
+        Exception exception = assertThrows(RuntimeException.class, () -> dispatchService.process(TEST_PARTITION, key, testEvent));
         assertThat(exception.getMessage(), equalTo("stock service client failure"));
 
         verifyNoInteractions(kafkaTemplateMock);
