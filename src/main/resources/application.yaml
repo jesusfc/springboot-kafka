@@ -13,4 +13,4 @@ spring:
       auto-offset-reset: earliest
 
 dispatch:
-  stockServiceEndpoint: http://localhost:9001/api/v1/stock
+  stockServiceEndpoint: http://localhost:9001/api/stock

@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
+import static com.jesusfc.kafka.integration.WiremockUtils.stubWiremock;
 import static java.util.UUID.randomUUID;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
@@ -47,8 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 // the partitions should match the number of partitions defined in the topics used in the test
 @EmbeddedKafka(partitions = 4, controlledShutdown = true,
         topics = {
-            OrderDispatchIntegrationTest.ORDER_CREATED_TOPIC,
-            OrderDispatchIntegrationTest.ORDER_DISPATCHED_TOPIC
+                OrderDispatchIntegrationTest.ORDER_CREATED_TOPIC,
+                OrderDispatchIntegrationTest.ORDER_DISPATCHED_TOPIC
         })
 class OrderDispatchIntegrationTest {
 
@@ -115,12 +117,65 @@ class OrderDispatchIntegrationTest {
     }
 
     @Test
-    void testOrderDispatchFlow() throws ExecutionException, InterruptedException {
+    void testOrderDispatchFlow_Success() throws ExecutionException, InterruptedException {
 
+        // Mock the external stock service to always return "true" for availability.
+        stubWiremock("/api/stock?item=my-item", 200, "true");
+
+        // Send OrderCreated event to the order.created topic to start the flow.
+        // This should trigger the DispatchService to process the event and send messages to other topics.
         OrderCreated orderCreated = TestEventData.buildOrderCreatedEvent(randomUUID(), "tracking123-order-created");
         sendMessageOrderDispatched("KEY_1", ORDER_CREATED_TOPIC, orderCreated);
 
-                OrderCreated orderDispatched = TestEventData.buildOrderCreatedEvent(randomUUID(), "trackingABC-order-dispatched");
+        // Wait until the DispatchPreparing message is received
+        OrderCreated orderDispatched = TestEventData.buildOrderCreatedEvent(randomUUID(), "trackingABC-order-dispatched");
+        sendMessageOrderDispatched("KEY_2", ORDER_DISPATCHED_TOPIC, orderDispatched);
+
+        await().atMost(3, TimeUnit.SECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
+                .until(testListener.dispatchPreparingCounter::get, equalTo(1));
+
+        await().atMost(3, TimeUnit.SECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
+                .until(testListener.orderDispatchedCounter::get, equalTo(1));
+
+    }
+
+    @Test
+    public void testOrderDispatchFlow_NotRetryableException() throws ExecutionException, InterruptedException {
+
+        // Mock the external stock service to return 400 Bad Request for the item.
+        stubWiremock("/api/stock?item=my-item", 400, "Bad Request");
+
+        // Send OrderCreated event to the order.created topic to start the flow.
+        // This should trigger the DispatchService to process the event and send messages to other topics.
+        OrderCreated orderCreated = TestEventData.buildOrderCreatedEvent(randomUUID(), "tracking123-order-created");
+        sendMessageOrderDispatched("KEY_3", ORDER_CREATED_TOPIC, orderCreated);
+
+        // Wait to ensure no messages are received since the item is unavailable.
+        await().atMost(3, TimeUnit.SECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
+                .until(testListener.dispatchPreparingCounter::get, equalTo(0));
+
+        await().atMost(3, TimeUnit.SECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
+                .until(testListener.orderDispatchedCounter::get, equalTo(0));
+
+    }
+
+    @Test
+    void testOrderDispatchFlow_RetryThenSuccess() throws ExecutionException, InterruptedException {
+
+        // Mock the external stock service to always return "true" for availability.
+        stubWiremock("/api/stock?item=my-item", 503, "service unavailable", "failOnce", STARTED, "succeedNextTime");
+
+        // On the second call, return success
+        stubWiremock("/api/stock?item=my-item", 200, "true", "failOnce", "succeedNextTime", "succeedNextTime");
+
+
+        // Send OrderCreated event to the order.created topic to start the flow.
+        // This should trigger the DispatchService to process the event and send messages to other topics.
+        OrderCreated orderCreated = TestEventData.buildOrderCreatedEvent(randomUUID(), "tracking123-order-created");
+        sendMessageOrderDispatched("KEY_1", ORDER_CREATED_TOPIC, orderCreated);
+
+        // Wait until the DispatchPreparing message is received
+        OrderCreated orderDispatched = TestEventData.buildOrderCreatedEvent(randomUUID(), "trackingABC-order-dispatched");
         sendMessageOrderDispatched("KEY_2", ORDER_DISPATCHED_TOPIC, orderDispatched);
 
         await().atMost(3, TimeUnit.SECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
